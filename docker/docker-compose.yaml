@@ -41,8 +41,8 @@ services:
     command: >
       --country-code=SE
       --bidding-zone=10YSE-1--------K
-      --start-date=2023-01-01
-      --end-date=2023-01-31
+      --start-date=2024-01-01
+      --end-date=2025-12-31
       --target-table=energy_load_raw
 
 volumes:
