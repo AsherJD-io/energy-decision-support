@@ -64,30 +64,40 @@ def parse_xml(xml_text, country_code, bidding_zone):
     timeseries = root.findall(".//ns:TimeSeries", NS)
 
     for ts in timeseries:
-        period = ts.find(".//ns:Period", NS)
+        periods = ts.findall(".//ns:Period", NS)
 
-        start_text = period.findtext("ns:timeInterval/ns:start", namespaces=NS)
-        resolution = period.findtext("ns:resolution", namespaces=NS)
+        for period in periods:
+            start_text = period.findtext("ns:timeInterval/ns:start", namespaces=NS)
+            resolution = period.findtext("ns:resolution", namespaces=NS)
 
-        start_dt = datetime.strptime(start_text, "%Y-%m-%dT%H:%MZ")
-        delta = parse_resolution(resolution)
+            if not start_text or not resolution:
+                continue
 
-        points = period.findall("ns:Point", NS)
+            start_dt = datetime.strptime(start_text, "%Y-%m-%dT%H:%MZ")
+            delta = parse_resolution(resolution)
 
-        for p in points:
-            position = int(p.findtext("ns:position", namespaces=NS))
-            quantity = float(p.findtext("ns:quantity", namespaces=NS))
+            points = period.findall("ns:Point", NS)
 
-            ts_time = start_dt + (position - 1) * delta
+            for p in points:
+                position_text = p.findtext("ns:position", namespaces=NS)
+                quantity_text = p.findtext("ns:quantity", namespaces=NS)
 
-            rows.append(
-                (
-                    ts_time,
-                    country_code,
-                    bidding_zone,
-                    quantity,
+                if not position_text or not quantity_text:
+                    continue
+
+                position = int(position_text)
+                quantity = float(quantity_text)
+
+                ts_time = start_dt + (position - 1) * delta
+
+                rows.append(
+                    (
+                        ts_time,
+                        country_code,
+                        bidding_zone,
+                        quantity,
+                    )
                 )
-            )
 
     return rows
 

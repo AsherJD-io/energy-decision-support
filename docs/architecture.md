@@ -35,14 +35,28 @@ The pipeline specifically ingests **Actual Total Load** observations representin
 
 The system follows a layered analytical warehouse architecture.
 
+The DSS warehouse follows a layered modeling pattern inspired by modern analytics engineering practices. This structure separates ingestion, normalization, validation, and analytical serving to maintain data lineage, reproducibility, and operational reliability.
+
+This warehouse is structured into five logical layers:
+
+- **Raw Layer**: `energy_load_raw`
+- **Clean Layer**: `energy_load_clean`
+- **Data Quality Layer**: `dq_time_gaps`, `dq_missing_hours`, `dq_invalid_loads`, `dq_pipeline_status`
+- **Analytics Layer**: `daily_load_summary`, `hourly_load_anomalies`, `daily_load_curve_profile`
+- **Mart Layer**: `mart_energy_system_metrics`, `mart_energy_system_metrics_long`
+
+This design preserves raw source fidelity, normalizes the analytical base to hourly grain, exposes explicit data quality controls, and delivers decision-ready system indicators for downstream interpretation.
+
 ```
 Raw Layer
    ↓
-Quality Validation Layer
+Data Quality Layer
    ↓
 Clean Analytical Layer
    ↓
-Decision Support Views
+Analytics Layer
+   ↓
+Decision Support / Mart Layer
 ```
 
 Each layer progressively improves data reliability and analytical usability.
@@ -93,6 +107,7 @@ Validation views include:
 dq_time_gaps
 dq_missing_hours
 dq_invalid_loads
+dq_pipeline_status
 ```
 
 These views identify structural problems in the dataset.
@@ -117,7 +132,7 @@ This table represents the **trusted dataset for analytical queries**.
 
 ---
 
-### 4.5 Decision Support Layer
+### 4.5 Analytics Layer
 
 The analytical layer exposes operational insights through SQL views.
 
@@ -130,6 +145,21 @@ daily_load_curve_profile
 ```
 
 These views transform hourly demand observations into interpretable operational indicators.
+
+---
+
+### 4.6 Decision Support / Mart Layer
+
+The mart layer aggregates analytical outputs into system-level indicators used for interpretation and reporting.
+
+Key outputs include:
+
+```
+mart_energy_system_metrics  
+mart_energy_system_metrics_long  
+```
+
+These views summarize system-wide demand characteristics such as peak demand, load curve structure, and seasonal demand behaviour.
 
 ---
 
@@ -157,6 +187,8 @@ ENTSO-E Transparency Platform
 
 Each stage progressively improves the reliability and interpretability of the dataset.
 
+During validation of the normalized dataset, the expected number of hourly observations for the 2024–2025 period was compared against the actual dataset size. A perfectly continuous two-year hourly series would contain 17,544 observations. The validated dataset contains 17,524 rows, indicating 20 missing source hours within the original ENTSO-E data. These gaps are surfaced through the data quality layer (`dq_missing_hours`) and preserved as part of the system’s validation outputs rather than being artificially interpolated.
+
 ---
 
 ## 5.1 Analytical Warehouse Model
@@ -171,6 +203,9 @@ Contains validated hourly observations where invalid or inconsistent records hav
 
 ### Analytics Layer
 Contains derived analytical views used for operational interpretation.
+
+### Mart Layer
+Contains aggregated decision-support indicators derived from analytical outputs.
 
 This structure ensures:
 
