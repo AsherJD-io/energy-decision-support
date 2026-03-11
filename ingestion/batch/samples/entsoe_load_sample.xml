@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Publication_MarketDocument
+  xmlns="urn:iec62325.351:tc57wg16:451-1:publicationdocument:7:0">
+
+  <TimeSeries>
+    <mRID>1</mRID>
+    <businessType>A65</businessType>
+
+    <outBiddingZone_Domain.mRID codingScheme="A01">
+      10Y1001A1001A44P
+    </outBiddingZone_Domain.mRID>
+
+    <Period>
+      <timeInterval>
+        <start>2023-01-01T00:00Z</start>
+        <end>2023-02-01T00:00Z</end>
+      </timeInterval>
+
+      <resolution>PT60M</resolution>
+
+      <Point>
+        <position>1</position>
+        <quantity>13542</quantity>
+      </Point>
+
+      <Point>
+        <position>2</position>
+        <quantity>13210</quantity>
+      </Point>
+
+      <Point>
+        <position>3</position>
+        <quantity>12988</quantity>
+      </Point>
+    </Period>
+  </TimeSeries>
+</Publication_MarketDocument>

@@ -1,0 +1,50 @@
+services:
+  pgdatabase:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: energy
+      POSTGRES_PASSWORD: energy
+      POSTGRES_DB: energy_dss
+    volumes:
+      - energy_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "8086:80"
+    depends_on:
+      - pgdatabase
+
+  ingestion:
+    build:
+      context: ../ingestion/batch
+    tty: true
+    profiles:
+      - batch
+    depends_on:
+      - pgdatabase
+    env_file:
+      - ../.env
+    environment:
+      PG_HOST: pgdatabase
+      PG_PORT: 5432
+      PG_DB: energy_dss
+      PG_USER: energy
+      PG_PASSWORD: energy
+    command: >
+      --country-code=SE
+      --bidding-zone=10YSE-1--------K
+      --start-date=2023-01-01
+      --end-date=2023-01-31
+      --target-table=energy_load_raw
+
+volumes:
+  energy_postgres_data:
+  pgadmin_data:
