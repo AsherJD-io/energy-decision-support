@@ -85,6 +85,19 @@ The pipeline processes electricity demand data through the following stages:
 
 ## Running the System
 
+Clone the repository and enter the project directory:
+
+```bash
+git clone https://github.com/AsherJD-io/energy-decision-support.git
+cd energy-decision-support
+```
+
+Create the environment configuration file:
+
+```bash
+cp .env.example .env
+```
+
 Start the local environment:
 
 ```bash
