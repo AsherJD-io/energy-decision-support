@@ -10,3 +10,4 @@ Thumbs.db
 *.sqlite3
 *.db
 docker-compose.override.yml
+.env_encoded
