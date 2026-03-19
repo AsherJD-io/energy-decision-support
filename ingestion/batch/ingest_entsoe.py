@@ -1,11 +1,17 @@
 import argparse
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 import xml.etree.ElementTree as ET
 
 import requests
-from db import insert_load_rows
+
+from db import (
+    ensure_pipeline_state_table,
+    get_last_ingested_at,
+    insert_load_rows,
+    upsert_pipeline_state,
+)
 
 try:
     import psycopg2
@@ -13,6 +19,8 @@ except ImportError:
     psycopg2 = None
 
 ENTSOE_BASE_URL = "https://web-api.tp.entsoe.eu/api"
+PIPELINE_NAME = "energy_dss_batch_ingestion"
+SOURCE_NAME = "entsoe_actual_total_load"
 
 NS = {
     "ns": "urn:iec62325.351:tc57wg16:451-6:generationloaddocument:3:0"
@@ -171,17 +179,54 @@ def update_pipeline_run_failed(
     conn.commit()
 
 
-def fetch_entsoe_xml(token, bidding_zone, start_date, end_date):
-    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-    end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+def parse_requested_window(start_date_str, end_date_str):
+    start_day = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+    end_day = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
+    requested_start_utc = datetime.combine(
+        start_day,
+        time(0, 0),
+        tzinfo=timezone.utc,
+    )
+    requested_end_utc = datetime.combine(
+        end_day,
+        time(23, 0),
+        tzinfo=timezone.utc,
+    )
+
+    if requested_end_utc < requested_start_utc:
+        raise ValueError("end-date must be greater than or equal to start-date")
+
+    return requested_start_utc, requested_end_utc
+
+
+def resolve_effective_window(country_code, bidding_zone, start_date_str, end_date_str):
+    requested_start_utc, requested_end_utc = parse_requested_window(start_date_str, end_date_str)
+
+    last_ingested_at_utc = get_last_ingested_at(
+        PIPELINE_NAME,
+        country_code,
+        bidding_zone,
+    )
+
+    if last_ingested_at_utc is None:
+        effective_start_utc = requested_start_utc
+    else:
+        effective_start_utc = last_ingested_at_utc + timedelta(hours=1)
+        if effective_start_utc < requested_start_utc:
+            effective_start_utc = requested_start_utc
+
+    return last_ingested_at_utc, effective_start_utc, requested_end_utc
+
+
+def fetch_entsoe_xml(token, bidding_zone, start_dt_utc, end_dt_utc):
     params = {
         "securityToken": token,
         "documentType": "A65",
         "processType": "A16",
         "outBiddingZone_Domain": bidding_zone,
-        "periodStart": start_dt.strftime("%Y%m%d%H%M"),
-        "periodEnd": end_dt.strftime("%Y%m%d%H%M"),
+        "periodStart": start_dt_utc.strftime("%Y%m%d%H%M"),
+        "periodEnd": (end_dt_utc + timedelta(hours=1)).strftime("%Y%m%d%H%M"),
     }
 
     response = requests.get(ENTSOE_BASE_URL, params=params, timeout=60)
@@ -249,44 +294,49 @@ def parse_xml(xml_text, country_code, bidding_zone):
     return rows, source_timeseries_count, resolution_detected
 
 
-def quarter_windows(start_date_str, end_date_str):
-    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+def quarter_end_date(current_date: date):
+    if current_date.month <= 3:
+        return date(current_date.year, 3, 31)
+    if current_date.month <= 6:
+        return date(current_date.year, 6, 30)
+    if current_date.month <= 9:
+        return date(current_date.year, 9, 30)
+    return date(current_date.year, 12, 31)
 
-    current = start_date
 
-    while current <= end_date:
-        if current.month <= 3:
-            quarter_end_month = 3
-            quarter_end_day = 31
-        elif current.month <= 6:
-            quarter_end_month = 6
-            quarter_end_day = 30
-        elif current.month <= 9:
-            quarter_end_month = 9
-            quarter_end_day = 30
-        else:
-            quarter_end_month = 12
-            quarter_end_day = 31
+def quarter_windows(start_dt_utc, end_dt_utc):
+    current = start_dt_utc
 
-        window_end = current.replace(month=quarter_end_month, day=quarter_end_day)
-        if window_end > end_date:
-            window_end = end_date
+    while current <= end_dt_utc:
+        q_end_date = quarter_end_date(current.date())
+        q_end_dt = datetime.combine(
+            q_end_date,
+            time(23, 0),
+            tzinfo=timezone.utc,
+        )
 
-        yield current.strftime("%Y-%m-%d"), window_end.strftime("%Y-%m-%d")
-        current = window_end + timedelta(days=1)
+        if q_end_dt > end_dt_utc:
+            q_end_dt = end_dt_utc
+
+        yield current, q_end_dt
+        current = q_end_dt + timedelta(hours=1)
 
 
 def main():
     args = parse_args()
     token = validate_env()
 
+    ensure_pipeline_state_table()
+
+    last_ingested_at_utc, effective_start_utc, effective_end_utc = resolve_effective_window(
+        country_code=args.country_code,
+        bidding_zone=args.bidding_zone,
+        start_date_str=args.start_date,
+        end_date_str=args.end_date,
+    )
+
     run_id = str(uuid.uuid4())
     started_at_utc = datetime.now(timezone.utc)
-    requested_start_utc = datetime.strptime(args.start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-    requested_end_utc = (
-        datetime.strptime(args.end_date, "%Y-%m-%d") + timedelta(days=1) - timedelta(hours=1)
-    ).replace(tzinfo=timezone.utc)
 
     rows_seen = 0
     rows_inserted = 0
@@ -300,27 +350,47 @@ def main():
     insert_pipeline_run(
         conn=audit_conn,
         run_id=run_id,
-        pipeline_name="energy_dss_batch_ingestion",
-        source_name="entsoe_actual_total_load",
+        pipeline_name=PIPELINE_NAME,
+        source_name=SOURCE_NAME,
         country_code=args.country_code,
         bidding_zone=args.bidding_zone,
-        requested_start_utc=requested_start_utc,
-        requested_end_utc=requested_end_utc,
+        requested_start_utc=effective_start_utc,
+        requested_end_utc=effective_end_utc,
         started_at_utc=started_at_utc,
     )
 
+    print(f"Resolved state for {args.country_code} / {args.bidding_zone}")
+    print(f"Last ingested at UTC: {last_ingested_at_utc}")
+    print(f"Effective request window UTC: {effective_start_utc} -> {effective_end_utc}")
+
     try:
-        for chunk_start, chunk_end in quarter_windows(args.start_date, args.end_date):
-            print(f"Fetching ENTSO-E data for chunk {chunk_start} -> {chunk_end}...")
+        if effective_start_utc > effective_end_utc:
+            print("No new window to ingest. Pipeline state is already ahead of requested range.")
+
+            update_pipeline_run_success(
+                conn=audit_conn,
+                run_id=run_id,
+                finished_at_utc=datetime.now(timezone.utc),
+                rows_seen=0,
+                rows_inserted=0,
+                min_event_time_utc=None,
+                max_event_time_utc=None,
+                resolution_detected=None,
+                source_timeseries_count=0,
+            )
+            return
+
+        for chunk_start_utc, chunk_end_utc in quarter_windows(effective_start_utc, effective_end_utc):
+            print(f"Fetching ENTSO-E data for chunk {chunk_start_utc} -> {chunk_end_utc}...")
 
             xml = fetch_entsoe_xml(
-                token,
-                args.bidding_zone,
-                chunk_start,
-                chunk_end,
+                token=token,
+                bidding_zone=args.bidding_zone,
+                start_dt_utc=chunk_start_utc,
+                end_dt_utc=chunk_end_utc,
             )
 
-            print(f"Parsing XML for chunk {chunk_start} -> {chunk_end}...")
+            print(f"Parsing XML for chunk {chunk_start_utc} -> {chunk_end_utc}...")
 
             chunk_rows, chunk_timeseries_count, chunk_resolution_detected = parse_xml(
                 xml,
@@ -348,14 +418,23 @@ def main():
                 if max_event_time_utc is None or chunk_max > max_event_time_utc:
                     max_event_time_utc = chunk_max
 
-            print(f"Parsed {chunk_rows_seen} rows for chunk {chunk_start} -> {chunk_end}")
+            print(f"Parsed {chunk_rows_seen} rows for chunk {chunk_start_utc} -> {chunk_end_utc}")
 
             chunk_inserted = insert_load_rows(chunk_rows, args.target_table)
             rows_inserted += chunk_inserted
 
-            print(f"Inserted {chunk_inserted} rows for chunk {chunk_start} -> {chunk_end}")
+            print(f"Inserted {chunk_inserted} rows for chunk {chunk_start_utc} -> {chunk_end_utc}")
 
         resolution_detected = ",".join(sorted(resolutions_seen)) if resolutions_seen else None
+
+        if max_event_time_utc is not None:
+            upsert_pipeline_state(
+                pipeline_name=PIPELINE_NAME,
+                country_code=args.country_code,
+                bidding_zone=args.bidding_zone,
+                last_ingested_at_utc=max_event_time_utc,
+            )
+            print(f"Updated pipeline_state to {max_event_time_utc}")
 
         update_pipeline_run_success(
             conn=audit_conn,
