@@ -10,44 +10,10 @@ services:
     ports:
       - "5433:5432"
 
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    ports:
-      - "8086:80"
-    depends_on:
-      - pgdatabase
-
-  ingestion:
-    build:
-      context: ../ingestion/batch
-    profiles:
-      - batch
-    env_file:
-      - ../.env
-    environment:
-      PG_HOST: pgdatabase
-      PG_PORT: 5432
-      PG_DB: energy_dss
-      PG_USER: energy
-      PG_PASSWORD: energy
-    command: >
-      --country-code=SE
-      --bidding-zone=10YSE-1--------K
-      --start-date=2024-01-01
-      --end-date=2025-12-31
-      --target-table=energy_load_raw
-
   kestra:
     image: kestra/kestra:latest
     user: "root"
     command: server standalone
-    env_file:
-      - ../.env_encoded
     ports:
       - "8087:8080"
       - "8088:8081"
@@ -74,10 +40,15 @@ services:
             type: local
             local:
               base-path: /app/storage
+          server:
+            basic-auth:
+              enabled: true
+              username: admin@energy.local
+              password: Trailda7A
+
     depends_on:
       - pgdatabase
 
 volumes:
   energy_postgres_data:
-  pgadmin_data:
   kestra_data:

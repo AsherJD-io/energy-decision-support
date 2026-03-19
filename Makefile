@@ -12,3 +12,6 @@ ingest:
 
 logs:
 	docker compose -f docker/docker-compose.yaml logs -f
+
+deploy-flow:
+	./scripts/deploy_kestra_flow.sh orchestration/kestra/energy_dss_pipeline.yml
