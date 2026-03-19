@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS energy_load_clean (
     PRIMARY KEY (time_utc, country_code, bidding_zone)
 );
 
-CREATE INDEX IF NOT EXISTS idx_energy_load_clean_time
-ON energy_load_clean (time_utc);
-
 CREATE INDEX IF NOT EXISTS idx_energy_load_clean_zone_time
 ON energy_load_clean (country_code, bidding_zone, time_utc);
+
+CREATE INDEX IF NOT EXISTS idx_energy_load_clean_ingested_at
+ON energy_load_clean (ingested_at);
