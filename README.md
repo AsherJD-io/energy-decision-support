@@ -59,12 +59,21 @@ energy-decision-support
 │       ├── Dockerfile
 │       └── requirements.txt
 │
+├── orchestration
+│   └── kestra
+│       └── energy_dss_pipeline.yml
+│
 ├── warehouse
+│   ├── raw
+│   ├── clean
+│   ├── admin
+│   ├── dq
+│   ├── analytics
+│   ├── mart
 │   └── schema.sql
 │
-├── notebooks
-│
-├── pipeline.py
+├── scripts
+│   └── deploy_kestra_flow.sh
 │
 └── LICENSE
 ```
@@ -73,59 +82,96 @@ energy-decision-support
 
 ## Pipeline Workflow
 
-The pipeline processes electricity demand data through the following stages:
+The pipeline is orchestrated using Kestra and executes the following stages:
 
-1. Retrieve hourly demand data from the ENTSO-E API  
-2. Parse XML responses into structured records  
-3. Load observations into a PostgreSQL warehouse  
-4. Apply data quality validation checks  
-5. Generate analytical views for decision support  
+1. **Ingestion**
+   - Retrieve electricity demand data from ENTSO-E API
+   - Parse XML into structured records
+   - Load into `energy_load_raw`
+
+2. **Clean Layer**
+   - Filter invalid records
+   - Normalize dataset into `energy_load_clean`
+
+3. **Data Quality Layer**
+   - Detect missing hours and time gaps
+   - Validate load values
+   - Generate pipeline status indicators
+
+4. **Analytics Layer**
+   - Daily summaries
+   - Load anomaly detection
+   - Load curve profiling
+
+5. **Mart Layer**
+   - Aggregate system-level metrics
+   - Produce decision-ready indicators
+
+6. **Validation**
+   - Enforce DQ assertions
+   - Fail pipeline if critical checks fail
 
 ---
 
 ## Running the System
 
-Clone the repository and enter the project directory:
+Clone the repository:
 
 ```bash
 git clone https://github.com/AsherJD-io/energy-decision-support.git
 cd energy-decision-support
 ```
 
-Create the environment configuration file:
+Create environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Start the local environment:
+Start services:
 
 ```bash
-docker compose -f docker/docker-compose.yaml up
+docker compose -f docker/docker-compose.yaml up -d
 ```
 
-Run the ingestion pipeline:
+Deploy Kestra flow:
 
 ```bash
-docker compose -f docker/docker-compose.yaml run --rm ingestion
+bash scripts/deploy_kestra_flow.sh
 ```
 
-This will:
+Run pipeline:
 
-1. retrieve ENTSO-E electricity demand data  
-2. parse the XML responses  
-3. insert validated records into PostgreSQL  
+1. Open Kestra UI: http://localhost:8087  
+2. Navigate to `energy.energy_dss_pipeline`  
+3. Click **Execute**
+
+This pipeline will:
+
+- ingest ENTSO-E data  
+- build warehouse layers  
+- validate data quality  
+- produce analytical outputs  
 
 ---
 
-## Future Evolution
+## Roadmap
 
-Planned extensions include:
+### Short Term
+- stabilize batch ingestion and DQ layer
+- improve pipeline observability and logging
+- refine analytical views for decision support
 
-- deployment to **Google Cloud Platform (GCP)**
-- automated pipeline scheduling
-- expanded analytical indicators
-- potential real-time demand monitoring
+### Mid Term
+- migrate warehouse to BigQuery
+- introduce dbt for transformation management
+- implement cloud-based orchestration
+
+### Long Term
+- evolve into hybrid batch + streaming architecture
+- integrate real-time ingestion (Kafka / Redpanda)
+- introduce streaming processing (Flink or streaming database)
+- enable real-time decision support layer
 
 ---
 

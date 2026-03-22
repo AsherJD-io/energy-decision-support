@@ -50,9 +50,9 @@ This design preserves raw source fidelity, normalizes the analytical base to hou
 ```
 Raw Layer
    ↓
-Data Quality Layer
+Clean Layer
    ↓
-Clean Analytical Layer
+Data Quality Layer
    ↓
 Analytics Layer
    ↓
@@ -226,14 +226,30 @@ The architecture emphasizes:
 
 ---
 
-## 7. Future Extensions
+## 7. System Roadmap
 
-Potential system extensions include:
+The system is designed to evolve from a batch analytics pipeline into a hybrid decision support platform.
 
-- workflow orchestration
-- additional transformation layers
+### Phase 1 — Batch Foundation (Current)
+- batch ingestion from ENTSO-E API
+- raw → clean → data quality → analytics → mart layers
+- orchestration via Kestra
+- PostgreSQL as analytical warehouse
+
+### Phase 2 — Cloud Migration
+- migrate warehouse to BigQuery
+- introduce dbt for transformation management
+- enable scalable storage and compute
+
+### Phase 3 — Advanced Analytics
 - demand forecasting models
-- real-time or near-real-time ingestion
+- anomaly detection and load pattern analysis
+- enhanced analytical views for decision support
+
+### Phase 4 — Streaming Evolution
+- real-time ingestion via Kafka / Redpanda
+- stream processing using Flink or streaming database
+- low-latency decision support layer
 
 ---
 

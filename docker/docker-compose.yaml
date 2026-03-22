@@ -24,6 +24,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/kestra-wd:/tmp/kestra-wd
     environment:
+      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx2g"
+      ENTSOE_API_TOKEN: "${ENTSOE_API_TOKEN}"
+
       KESTRA_CONFIGURATION: |
         datasources:
           postgres:
@@ -41,6 +44,8 @@ services:
             type: local
             local:
               base-path: /app/storage
+          tutorialFlows:
+            enabled: false
           server:
             basic-auth:
               enabled: true
