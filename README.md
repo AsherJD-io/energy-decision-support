@@ -78,7 +78,7 @@ PostgreSQL → BigQuery synchronization executed successfully:
 
 ## dbt Transformation Layer (BigQuery)
 
-A lightweight dbt layer was implemented on top of BigQuery to manage analytical transformations.
+A dbt transformation layer was implemented on top of BigQuery to manage analytical transformations.
 
 ### Lineage Graph
 
@@ -91,6 +91,27 @@ A lightweight dbt layer was implemented on top of BigQuery to manage analytical 
 ### Project Structure
 
 ![dbt Project Structure](docs/images/dbt_project_structure.png)
+
+---
+
+## Batch Processing Layer (Apache Spark)
+
+A distributed batch processing layer was implemented using Apache Spark on top of BigQuery.
+
+This layer demonstrates large-scale aggregation and analytical computation outside of the core warehouse, simulating how heavy workloads can be offloaded to a distributed engine.
+
+### Spark Transformation
+
+- Reads from: `energy_dss.energy_load_clean` (BigQuery)
+- Computes aggregated metrics:
+  - average load
+  - peak load
+  - minimum load
+- Writes results to: `energy_dss_spark.spark_energy_metrics`
+
+### Spark Output (BigQuery)
+
+![Spark Output](docs/images/spark_output.png)
 
 ---
 
@@ -219,14 +240,14 @@ This pipeline will:
 - refine analytical views for decision support
 
 ### Mid Term
-- migrate warehouse to BigQuery
-- introduce dbt for transformation management
-- implement cloud-based orchestration
+- extend Spark transformations for advanced aggregations
+- optimize BigQuery storage and query performance
+- introduce orchestration improvements for cloud workloads
 
 ### Long Term
 - evolve into hybrid batch + streaming architecture
 - integrate real-time ingestion (Kafka / Redpanda)
-- introduce streaming processing (Flink or streaming database)
+- introduce stream processing (Flink or streaming database)
 - enable real-time decision support layer
 
 ---

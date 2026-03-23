@@ -228,25 +228,31 @@ The architecture emphasizes:
 
 ## 7. System Roadmap
 
-The system is designed to evolve from a batch analytics pipeline into a hybrid decision support platform.
+The system evolves from a batch analytical pipeline into a hybrid decision support platform with distributed compute and real-time capabilities.
 
-### Phase 1 — Batch Foundation (Current)
+### Phase 1 — Batch Foundation (Completed)
 - batch ingestion from ENTSO-E API
-- raw → clean → data quality → analytics → mart layers
+- raw → clean → dq → analytics → mart layers
 - orchestration via Kestra
-- PostgreSQL as analytical warehouse
+- PostgreSQL warehouse
 
-### Phase 2 — Cloud Migration
-- migrate warehouse to BigQuery
-- introduce dbt for transformation management
-- enable scalable storage and compute
+### Phase 2 — Cloud Warehouse + Transformation (Completed)
+- migration to BigQuery as analytical warehouse
+- PostgreSQL → BigQuery synchronization
+- dbt-based transformation layer on BigQuery
+- cloud reproducibility established
 
-### Phase 3 — Advanced Analytics
+### Phase 3 — Distributed Batch Processing (Completed)
+- Spark-based batch processing on BigQuery data
+- large-scale aggregations outside core warehouse
+- materialized Spark outputs for analytical consumption
+
+### Phase 4 — Advanced Analytics (Next)
 - demand forecasting models
-- anomaly detection and load pattern analysis
-- enhanced analytical views for decision support
+- anomaly detection and pattern analysis
+- richer decision support metrics
 
-### Phase 4 — Streaming Evolution
+### Phase 5 — Streaming Evolution (Future)
 - real-time ingestion via Kafka / Redpanda
 - stream processing using Flink or streaming database
 - low-latency decision support layer
