@@ -38,6 +38,44 @@ A detailed explanation of the system architecture, data flow, and design rationa
 
 ---
 
+## Cloud Reproducibility (GCP)
+
+The pipeline is reproducible on GCP using Cloud SQL and BigQuery.
+
+The pipeline was executed locally, data was ingested into Cloud SQL, and warehouse layers were synchronized into BigQuery for analytical querying.
+
+### BigQuery Tables
+
+The following categories of tables are available in BigQuery:
+
+- Raw Layer: energy_load_raw  
+- Clean Layer: energy_load_clean  
+- Data Quality Layer: dq_*  
+- Analytics Layer: daily_*  
+- Mart Layer: mart_*  
+
+![BigQuery Tables](docs/images/bq_tables.png)
+
+### Analytical Output
+
+Example analytical query:
+
+```sql
+SELECT *
+FROM `energy-dss-1773915785.energy_dss.mart_energy_system_metrics_long`
+ORDER BY metric;
+```
+
+![Analytical Output](docs/images/bq_query_result.png)
+
+### Sync Execution
+
+PostgreSQL → BigQuery synchronization executed successfully:
+
+![Sync Execution](docs/images/sync_execution.png)
+
+---
+
 ## Repository Structure
 
 ```

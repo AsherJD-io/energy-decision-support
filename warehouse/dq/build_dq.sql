@@ -1,9 +1,11 @@
 SET search_path TO public;
 
-DROP VIEW IF EXISTS dq_pipeline_status;
-DROP VIEW IF EXISTS dq_invalid_loads;
-DROP VIEW IF EXISTS dq_missing_hours;
-DROP VIEW IF EXISTS dq_time_gaps;
+DROP VIEW IF EXISTS dq_assertions CASCADE;
+DROP VIEW IF EXISTS dq_reconciliation_summary CASCADE;
+DROP VIEW IF EXISTS dq_pipeline_status CASCADE;
+DROP VIEW IF EXISTS dq_invalid_loads CASCADE;
+DROP VIEW IF EXISTS dq_missing_hours CASCADE;
+DROP VIEW IF EXISTS dq_time_gaps CASCADE;
 
 CREATE VIEW dq_time_gaps AS
 WITH ordered_load AS (
