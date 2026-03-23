@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_energy_load_clean
+    description: "Staging model for cleaned energy load data synchronized from BigQuery sync layer."
+    columns:
+      - name: time_utc
+        tests:
+          - not_null
+      - name: country_code
+        tests:
+          - not_null
+      - name: bidding_zone
+        tests:
+          - not_null
+      - name: load_mw
+        tests:
+          - not_null
+
+  - name: stg_dq_assertions
+    description: "Staging model for data quality assertions."
+    columns:
+      - name: assertion_name
+        tests:
+          - not_null
+      - name: status
+        tests:
+          - not_null
+
+  - name: fct_energy_daily_summary
+    description: "dbt-managed daily energy load summary model."
+    columns:
+      - name: load_date
+        tests:
+          - not_null
+
+  - name: fct_energy_hourly_profile
+    description: "dbt-managed hourly load curve profile."
+    columns:
+      - name: hour_of_day
+        tests:
+          - not_null

@@ -76,6 +76,24 @@ PostgreSQL → BigQuery synchronization executed successfully:
 
 ---
 
+## dbt Transformation Layer (BigQuery)
+
+A lightweight dbt layer was implemented on top of BigQuery to manage analytical transformations.
+
+### Lineage Graph
+
+![dbt Lineage](docs/images/dbt_lineage.png)
+
+### BigQuery Models
+
+![dbt BigQuery Models](docs/images/dbt_bigquery_models.png)
+
+### Project Structure
+
+![dbt Project Structure](docs/images/dbt_project_structure.png)
+
+---
+
 ## Repository Structure
 
 ```

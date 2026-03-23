@@ -19,3 +19,12 @@ docker-compose.override.yml
 
 # OS / misc
 .DS_Store
+
+# dbt artifacts
+target/
+dbt_packages/
+
+
+# dbt artifacts
+target/
+dbt_packages/
