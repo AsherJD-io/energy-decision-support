@@ -38,6 +38,24 @@ A detailed explanation of the system architecture, data flow, and design rationa
 
 ---
 
+## Orchestration (Kestra)
+
+The pipeline is orchestrated using Kestra, coordinating ingestion, transformation, and data quality stages.
+
+Execution flow:
+
+- ingest → build_clean → build_dq → build_analytics → validate_dq
+
+Each stage runs as an isolated task, enforcing separation between ingestion, transformation, and validation layers.
+
+### Pipeline Execution (Gantt View)
+
+The Gantt view below shows a successful execution with clear task sequencing and timing across the pipeline.
+
+![Kestra Pipeline Execution (Gantt View)](docs/images/kestra_pipeline_execution_gantt.png)
+
+---
+
 ## Cloud Reproducibility (GCP)
 
 The pipeline is reproducible on GCP using Cloud SQL and BigQuery.
@@ -73,6 +91,22 @@ ORDER BY metric;
 PostgreSQL → BigQuery synchronization executed successfully:
 
 ![Sync Execution](docs/images/sync_execution.png)
+
+---
+
+## Infrastructure as Code (Terraform)
+
+Terraform is used to define core analytical infrastructure in GCP.
+
+### Provisioned Resource
+
+- BigQuery dataset: `energy_dss`
+
+### Execution
+
+The existing dataset was brought under Terraform management using import, enabling declarative infrastructure tracking without recreating cloud resources.
+
+![Terraform Apply](docs/images/terraform_apply.png)
 
 ---
 
@@ -115,43 +149,94 @@ This layer demonstrates large-scale aggregation and analytical computation outsi
 
 ---
 
+## System Interface (Visualization)
+
+A lightweight dashboard was created using Looker Studio to validate analytical outputs and system integrity.
+
+The dashboard includes:
+
+- Daily load trend (analytics layer)
+- Anomaly signal (analytics layer)
+- Data quality indicator (DQ layer)
+
+This provides a simple system-level view of energy demand behavior and data reliability.
+
+Live Dashboard: [View Dashboard](https://lookerstudio.google.com/reporting/98798d08-8a43-4ab0-ae51-40291c01ac1e)
+
+![System Overview Dashboard](docs/images/system_overview_dashboard.png)
+
+---
+
 ## Repository Structure
 
 ```
-energy-decision-support
+energy-decision-support/
 │
-├── README.md
+├── docker/
+│   ├── docker-compose.yaml
+│   └── init/
+│       └── init.sql
 │
-├── docs
+├── docs/
 │   ├── architecture.md
-│   └── architecture-diagram.png
+│   ├── architecture-diagram.png
+│   └── images/
+│       ├── system_overview_dashboard.png
+│       ├── spark_output.png
+│       ├── bq_tables.png
+│       ├── bq_query_result.png
+│       ├── dbt_lineage.png
+│       ├── dbt_bigquery_models.png
+│       ├── kestra_pipeline_execution_gantt.png
+│       ├── sync_execution.png
+│       └── terraform_apply.png
 │
-├── docker
-│   └── docker-compose.yaml
+├── infra/
+│   └── terraform/
+│       ├── main.tf
+│       ├── provider.tf
+│       ├── variables.tf
+│       └── terraform.tfvars
 │
-├── ingestion
-│   └── batch
+├── ingestion/
+│   └── batch/
 │       ├── ingest_entsoe.py
 │       ├── db.py
 │       ├── Dockerfile
-│       └── requirements.txt
+│       ├── requirements.txt
+│       └── samples/
 │
-├── orchestration
-│   └── kestra
+├── orchestration/
+│   └── kestra/
 │       └── energy_dss_pipeline.yml
 │
-├── warehouse
-│   ├── raw
-│   ├── clean
-│   ├── admin
-│   ├── dq
-│   ├── analytics
-│   ├── mart
+├── transformation/
+│   └── dbt_energy_dss/
+│       ├── dbt_project.yml
+│       ├── models/
+│       ├── tests/
+│       └── logs/
+│
+├── warehouse/
+│   ├── raw/
+│   ├── clean/
+│   ├── dq/
+│   ├── analytics/
+│   ├── mart/
+│   ├── admin/
 │   └── schema.sql
 │
-├── scripts
+├── scripts/
+│   ├── sync_postgres_to_bigquery.py
+│   ├── spark_bigquery_transform.py
 │   └── deploy_kestra_flow.sh
 │
+├── notebooks/
+│
+├── .env.example
+├── Makefile
+├── requirements-gcp.txt
+├── README.md
 └── LICENSE
 ```
 

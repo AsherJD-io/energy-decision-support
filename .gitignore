@@ -1,30 +1,40 @@
+# Environment
 .env
+.env_encoded
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .ipynb_checkpoints/
-Thumbs.db
+
+# Logs / local db
 *.log
 *.sqlite3
 *.db
-docker-compose.override.yml
-.env_encoded
 
-# Python env
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Virtual environments
+venv/
+.venv/
 .venv-gcp/
 
-# GCP creds
+# GCP credentials
 *.json
 
-# OS / misc
-.DS_Store
-
-# dbt artifacts
+# dbt
 target/
 dbt_packages/
 
-
-# dbt artifacts
-target/
-dbt_packages/
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/terraform.tfstate*
+infra/terraform/.terraform.lock.hcl
+infra/terraform/crash.log

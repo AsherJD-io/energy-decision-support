@@ -12,7 +12,7 @@ inputs:
 
   - id: start_date
     type: STRING
-    defaults: 2025-12-01
+    defaults: 2024-01-01
 
   - id: end_date
     type: STRING
@@ -74,15 +74,19 @@ tasks:
               ingested_at
           )
           SELECT
-              r.time_utc,
+              date_trunc('hour', r.time_utc) AS time_utc,
               r.country_code,
               r.bidding_zone,
-              r.load_mw,
-              COALESCE(r.source, 'ENTSO-E'),
-              r.ingested_at
+              AVG(r.load_mw) AS load_mw,
+              COALESCE(MAX(r.source), 'ENTSO-E'),
+              MAX(r.ingested_at) AS ingested_at
           FROM energy_load_raw r
           WHERE r.load_mw IS NOT NULL
             AND r.load_mw >= 0
+          GROUP BY
+              date_trunc('hour', r.time_utc),
+              r.country_code,
+              r.bidding_zone
           ON CONFLICT (time_utc, country_code, bidding_zone) DO UPDATE
           SET
               load_mw = EXCLUDED.load_mw,
