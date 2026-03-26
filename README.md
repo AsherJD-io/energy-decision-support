@@ -339,6 +339,6 @@ This pipeline will:
 
 ## License
 
-This project is licensed under the **MIT License**.
+This project is not open source.
 
-See the `LICENSE` file for details.
+See the `LICENSE` file for full terms.

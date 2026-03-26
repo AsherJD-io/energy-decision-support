@@ -38,3 +38,10 @@ infra/terraform/.terraform/
 infra/terraform/terraform.tfstate*
 infra/terraform/.terraform.lock.hcl
 infra/terraform/crash.log
+
+# Data (prevent accidental ingestion leaks)
+data/
+*.csv
+
+# Optional: generated outputs
+docs/*.png
